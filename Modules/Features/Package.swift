@@ -5,11 +5,19 @@ import PackageDescription
 
 let package = Package(
     name: "Features",
-    platforms: [.macOS(.v13)],
+    defaultLocalization: "en",
+    platforms: [.macOS(.v14)],
     products: [
         .library(name: "Transforming", targets: ["Transforming"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/Kamaalio/KamaalSwift.git", "2.3.1"..<"3.0.0"),
+        .package(path: "../DesignSystem"),
+    ],
     targets: [
-        .target(name: "Transforming"),
+        .target(name: "Transforming", dependencies: [
+            .product(name: "KamaalExtensions", package: "KamaalSwift"),
+            "DesignSystem",
+        ]),
     ]
 )

@@ -1,0 +1,21 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "API key" : {
+
+    },
+    "API key should not be empty" : {
+
+    },
+    "OpenAI" : {
+
+    },
+    "Pick a file to transform" : {
+
+    }
+  },
+  "version" : "1.0"
+}

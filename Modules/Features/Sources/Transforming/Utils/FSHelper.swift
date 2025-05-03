@@ -22,11 +22,14 @@ enum FSHelper {
         return fileURL
     }
 
-    static func readFileContent(from url: URL) -> Result<String, Error> {
+    static func readFileContent(from url: URL) -> Result<FileItem, Error> {
+        let fileContent: String
         do {
-            return .success(try String(contentsOf: url, encoding: .utf8))
+            fileContent = try String(contentsOf: url, encoding: .utf8)
         } catch {
             return .failure(error)
         }
+
+        return .success(.init(content: fileContent, url: url))
     }
 }

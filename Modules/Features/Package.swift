@@ -17,6 +17,7 @@ let package = Package(
     targets: [
         .target(name: "Transforming", dependencies: [
             .product(name: "KamaalExtensions", package: "KamaalSwift"),
+            .product(name: "KamaalLogger", package: "KamaalSwift"),
             "DesignSystem",
         ]),
     ]

@@ -16,6 +16,10 @@ extension View {
         frame(maxWidth: .infinity, alignment: alignment)
     }
 
+    public func takeHeightEagerly(alignment: Alignment = .center) -> some View {
+        frame(maxHeight: .infinity, alignment: alignment)
+    }
+
     @ViewBuilder
     public func applyIf(_ condition: Bool, transformation: (_ view: Self) -> some View) -> some View {
         if condition { transformation(self) } else { self }

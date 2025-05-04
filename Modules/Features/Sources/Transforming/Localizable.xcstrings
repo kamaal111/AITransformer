@@ -10,6 +10,12 @@
     "API key should not be empty" : {
 
     },
+    "Failed to read file content" : {
+
+    },
+    "Files" : {
+
+    },
     "OpenAI" : {
 
     },

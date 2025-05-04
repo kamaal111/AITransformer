@@ -7,19 +7,25 @@
 
 import AppKit
 
+struct FSHelperConfig {
+    let allowsMultipleSelection: Bool
+    let canChooseDirectories: Bool
+
+    init(allowsMultipleSelection: Bool = false, canChooseDirectories: Bool = false) {
+        self.allowsMultipleSelection = allowsMultipleSelection
+        self.canChooseDirectories = canChooseDirectories
+    }
+}
+
 enum FSHelper {
     @MainActor
-    static func openFilePicker() -> URL? {
+    static func openFilePicker(config: FSHelperConfig = .init()) -> [URL]? {
         let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = config.allowsMultipleSelection
+        panel.canChooseDirectories = config.canChooseDirectories
         guard panel.runModal() == .OK else { return nil }
-        guard let fileURL = panel.url else {
-            assertionFailure("File URL should be available")
-            return nil
-        }
 
-        return fileURL
+        return panel.urls
     }
 
     static func readFileContent(from url: URL) -> Result<FileItem, Error> {

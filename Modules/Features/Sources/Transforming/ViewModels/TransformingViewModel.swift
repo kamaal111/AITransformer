@@ -11,11 +11,15 @@ import KamaalLogger
 import KamaalExtensions
 
 enum OpenFilePickerErrors: Error, LocalizedError {
-    case failedToReadContent(cause: Error)
+    case failedToReadContent(cause: Error, url: URL)
 
     var errorDescription: String? {
         switch self {
-        case .failedToReadContent: return NSLocalizedString("Failed to read file content", bundle: .module, comment: "")
+        case let .failedToReadContent(_, url):
+            return String(
+                format: NSLocalizedString("Failed to read file content of %@", bundle: .module, comment: ""),
+                url.absoluteString
+            )
         }
     }
 }
@@ -28,23 +32,45 @@ final class TransformingViewModel {
 
     @MainActor
     func openFilePicker() -> Result<Void, OpenFilePickerErrors> {
-        let fileURL = FSHelper.openFilePicker()
-        guard let fileURL else { return .success(()) }
+        guard let fileURLs = FSHelper.openFilePicker(config: .init(allowsMultipleSelection: true)) else { return .success(()) }
 
-        return FSHelper.readFileContent(from: fileURL)
-            .onFailure { logger.error(label: "Failed to read file content", error: $0) }
-            .onSuccess { addToOpenedFiles($0) }
-            .mapError { .failedToReadContent(cause: $0) }
-            .map { _ in () }
+        let results = fileURLs
+            .map { url in
+                FSHelper.readFileContent(from: url)
+                    .mapError { error in OpenFilePickerErrors.failedToReadContent(cause: error, url: url) }
+                    .onFailure { error in logger.error(label: "Failed to read file content", error: error) }
+            }
+            .reduce((successes: [FileItem](), failures: [OpenFilePickerErrors]()), { result, current in
+                switch current {
+                case let .failure(failure): return (result.successes, result.failures.appended(failure))
+                case let .success(success): return (result.successes.appended(success), result.failures)
+                }
+            })
+        addToOpenedFiles(results.successes)
+
+        if let firstError = results.failures.first {
+            return .failure(firstError)
+        }
+
+        logger.info("Opened \(results.successes.count) files")
+
+        return .success(())
     }
 
     @MainActor
     private func addToOpenedFiles(_ file: FileItem) {
+        addToOpenedFiles([file])
+    }
+
+    @MainActor
+    private func addToOpenedFiles(_ files: [FileItem]) {
         var newOpenedFiles = openedFiles
-        if let existingFileIndex = openedFiles.findIndex(by: \.url, is: file.url) {
-            newOpenedFiles[existingFileIndex] = file
-        } else {
-            newOpenedFiles = newOpenedFiles.prepended(file)
+        for file in files {
+            if let existingFileIndex = openedFiles.findIndex(by: \.url, is: file.url) {
+                newOpenedFiles[existingFileIndex] = file
+            } else {
+                newOpenedFiles = newOpenedFiles.prepended(file)
+            }
         }
         openedFiles = newOpenedFiles
     }

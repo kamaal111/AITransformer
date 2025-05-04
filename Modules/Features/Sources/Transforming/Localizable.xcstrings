@@ -13,6 +13,9 @@
     "Failed to read file content" : {
 
     },
+    "Failed to read file content of %@" : {
+
+    },
     "Files" : {
 
     },

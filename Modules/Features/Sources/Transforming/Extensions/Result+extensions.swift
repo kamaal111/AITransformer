@@ -25,4 +25,12 @@ extension Result {
 
         return self
     }
+
+    func getOrNil() -> Success? {
+        switch self {
+        case .failure: return nil
+        case let .success(success): return success
+        }
+    }
+
 }

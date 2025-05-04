@@ -7,8 +7,11 @@
 
 import Foundation
 import Observation
-import KamaalLogger
 import KamaalExtensions
+@preconcurrency import KamaalLogger
+
+private let DEFAULT_PROVIDER: LLMProviders = .openai
+private let logger = KamaalLogger(from: TransformingViewModel.self, failOnError: true)
 
 enum OpenFilePickerErrors: Error, LocalizedError {
     case failedToReadContent(cause: Error, url: URL)
@@ -24,15 +27,59 @@ enum OpenFilePickerErrors: Error, LocalizedError {
     }
 }
 
+enum StoreAPIKeyErrors: Error, LocalizedError {
+    case encodingFailure
+    case storageFailure(cause: Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .encodingFailure:
+            return NSLocalizedString("Failed to encode API key for storage", bundle: .module, comment: "")
+        case .storageFailure:
+            return NSLocalizedString("Failed to store API key", bundle: .module, comment: "")
+        }
+    }
+}
+
+@MainActor
 @Observable
 final class TransformingViewModel {
-    private(set) var openedFiles: [FileItem] = []
+    var selectedLLMProvider: LLMProviders {
+        didSet { onSelectedLLMProviderChange() }
+    }
+    var selectedLLMModel: LLMModel
+    private(set) var openedFiles: [FileItem]
+    private var apiKeys: [LLMProviders: String]
 
-    private let logger = KamaalLogger(from: TransformingViewModel.self, failOnError: true)
+    init() {
+        let llmProvider = DEFAULT_PROVIDER
+        self.selectedLLMProvider = llmProvider
+        self.selectedLLMModel = llmProvider.models.first!
+        self.openedFiles = []
 
-    @MainActor
+        if let initialAPIKey = Self.getAPIKey(for: llmProvider) {
+            self.apiKeys = [llmProvider: initialAPIKey]
+        } else {
+            self.apiKeys = [:]
+        }
+    }
+
+    var apiKeyForSelectedLLMProvider: String? {
+        apiKeys[selectedLLMProvider]
+    }
+
+    func storeAPIKey(_ apiKey: String) -> Result<Void, StoreAPIKeyErrors> {
+        guard let apiKeyData = apiKey.data(using: .utf8) else { return .failure(.encodingFailure) }
+
+        return Keychain.set(apiKeyData, forKey: selectedLLMProvider.key)
+            .onFailure { logger.error(label: "Failed to store API key for \(selectedLLMProvider.name)", error: $0) }
+            .mapError { .storageFailure(cause: $0) }
+            .onSuccess { apiKeys[selectedLLMProvider] = apiKey }
+    }
+
     func openFilePicker() -> Result<Void, OpenFilePickerErrors> {
-        guard let fileURLs = FSHelper.openFilePicker(config: .init(allowsMultipleSelection: true)) else { return .success(()) }
+        let fileURLs = FSHelper.openFilePicker(config: .init(allowsMultipleSelection: true))
+        guard let fileURLs else { return .success(()) }
 
         let results = fileURLs
             .map { url in
@@ -57,12 +104,19 @@ final class TransformingViewModel {
         return .success(())
     }
 
-    @MainActor
+    private func onSelectedLLMProviderChange() {
+        if !selectedLLMProvider.models.contains(selectedLLMModel) {
+            selectedLLMModel = selectedLLMProvider.models.first!
+        }
+        if apiKeys[selectedLLMProvider] == nil {
+            apiKeys[selectedLLMProvider] = Self.getAPIKey(for: selectedLLMProvider)
+        }
+    }
+
     private func addToOpenedFiles(_ file: FileItem) {
         addToOpenedFiles([file])
     }
 
-    @MainActor
     private func addToOpenedFiles(_ files: [FileItem]) {
         var newOpenedFiles = openedFiles
         for file in files {
@@ -73,5 +127,14 @@ final class TransformingViewModel {
             }
         }
         openedFiles = newOpenedFiles
+    }
+
+    private static func getAPIKey(for provider: LLMProviders) -> String? {
+        Keychain.get(forKey: provider.key)
+            .map { data -> String? in
+                guard let data else { return nil }
+                return String(data: data, encoding: .utf8)
+            }
+            .getOrNil() ?? nil
     }
 }

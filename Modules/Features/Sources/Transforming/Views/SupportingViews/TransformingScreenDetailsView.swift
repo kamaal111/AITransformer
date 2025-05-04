@@ -8,66 +8,86 @@
 import SwiftUI
 import DesignSystem
 
-private let DEFAULT_PROVIDER: LLMProviders = .openai
-private let DEFAULT_MODEL = DEFAULT_PROVIDER.models.first!
-
 struct TransformingScreenDetailsView: View {
+    @Binding var toast: Toast?
+
     @State var viewModel: TransformingViewModel
 
     @State private var apiKeyField = ""
     @State private var apiKeyFieldError: AppTextFieldErrorResult?
-    @State private var selectedLLMProvider = DEFAULT_PROVIDER
-    @State private var selectedLLMModel: LLMModel = DEFAULT_MODEL
 
     var body: some View {
         VStack {
-            VStack {
-                AppTextField(
-                    text: $apiKeyField,
-                    errorResult: $apiKeyFieldError,
-                    localizedTitle: "API key",
-                    bundle: .module,
-                    variant: .secure,
-                    validations: [
-                        .minimumLength(
-                            length: 1,
-                            message: NSLocalizedString(
-                                "API key should not be empty",
-                                bundle: .module,
-                                comment: ""
-                            )
-                        ),
-                    ]
-                )
-                HStack {
-                    Picker("", selection: $selectedLLMProvider) {
-                        ForEach(LLMProviders.allCases) { provider in
-                            Text(provider.name)
-                        }
+            HStack {
+                if viewModel.apiKeyForSelectedLLMProvider == nil {
+                    AppTextField(
+                        text: $apiKeyField,
+                        errorResult: $apiKeyFieldError,
+                        localizedTitle: "API key",
+                        bundle: .module,
+                        variant: .secure,
+                        validations: [
+                            .minimumLength(
+                                length: 1,
+                                message: NSLocalizedString(
+                                    "API key should not be empty",
+                                    bundle: .module,
+                                    comment: ""
+                                )
+                            ),
+                        ]
+                    )
+                    .onSubmit(storeAPIKey)
+                    Button(action: storeAPIKey) {
+                        Text("Store")
+                            .foregroundStyle(Color.accentColor)
+                            .bold()
                     }
-                    .labelsHidden()
-                    Picker("", selection: $selectedLLMModel) {
-                        ForEach(selectedLLMProvider.models, id: \.self) { model in
-                            Text(model.key)
-                        }
-                    }
-                    .labelsHidden()
-                }
+                    .disabled(!apiKeyFieldIsValid)
+                    .padding(.bottom, -8)
+                } else { }
             }
-        }
-        .onChange(of: selectedLLMProvider, initial: false) { oldValue, newValue in
-            guard oldValue != newValue else { return }
-
-            selectedLLMModel = newValue.models.first!
+            HStack {
+                Picker("", selection: $viewModel.selectedLLMProvider) {
+                    ForEach(LLMProviders.allCases) { provider in
+                        Text(provider.name)
+                    }
+                }
+                .labelsHidden()
+                Picker("", selection: $viewModel.selectedLLMModel) {
+                    ForEach(viewModel.selectedLLMProvider.models, id: \.self) { model in
+                        Text(model.key)
+                    }
+                }
+                .labelsHidden()
+            }
         }
         .takeSizeEagerly(alignment: .top)
         .padding(.vertical, .medium)
         .padding(.horizontal, .large)
+    }
+
+    private func storeAPIKey() {
+        guard apiKeyFieldIsValid else { return }
+
+        if let apiKeyFieldError, !apiKeyFieldError.valid {
+            toast = .error(message: apiKeyFieldError.errorMessage ?? "")
+            return
+        }
+
+        viewModel.storeAPIKey(apiKeyField)
+            .onFailure { toast = .error(message: $0.localizedDescription) }
+    }
+
+    private var apiKeyFieldIsValid: Bool {
+        apiKeyFieldError?.valid == true || apiKeyFieldError == nil
     }
 }
 
 #Preview {
     @Previewable @State var viewModel = TransformingViewModel()
 
-    TwoColumnView(leftView: { Text("Hello") }, rightView: { TransformingScreenDetailsView(viewModel: viewModel) })
+    TwoColumnView(leftView: { Text("Hello") }, rightView: {
+        TransformingScreenDetailsView(toast: .constant(nil), viewModel: viewModel)
+    })
 }

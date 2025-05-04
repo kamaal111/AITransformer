@@ -11,10 +11,14 @@ private let OPENAI_MODELS = [
     LLMModel(key: "gpt-4o-mini")
 ]
 
-enum LLMProviders: CaseIterable, Hashable, Identifiable {
+enum LLMProviders: String, CaseIterable, Hashable, Identifiable {
     case openai
 
     var id: Self { self }
+
+    var key: String {
+        "\(ModuleConfig.identifier).LLMProvider.\(rawValue)"
+    }
 
     var models: [LLMModel] {
         switch self {

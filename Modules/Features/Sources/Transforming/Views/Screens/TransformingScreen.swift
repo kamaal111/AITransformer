@@ -22,7 +22,10 @@ public struct TransformingScreen: View {
                 TransformingScreenSidebar(toast: $toast, viewModel: viewModel)
                     .frame(maxWidth: MAX_SIDEBAR_WIDTH)
             },
-            rightView: { TransformingScreenDetailsView(viewModel: viewModel) }
+            rightView: {
+                TransformingScreenDetailsView(toast: $toast, viewModel: viewModel)
+                    .takeSizeEagerly()
+            }
         )
         .toastView(toast: $toast)
     }

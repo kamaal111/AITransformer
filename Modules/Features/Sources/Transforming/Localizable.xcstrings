@@ -10,10 +10,16 @@
     "API key should not be empty" : {
 
     },
+    "Failed to encode API key for storage" : {
+
+    },
     "Failed to read file content" : {
 
     },
     "Failed to read file content of %@" : {
+
+    },
+    "Failed to store API key" : {
 
     },
     "Files" : {
@@ -23,6 +29,9 @@
 
     },
     "Pick a file to transform" : {
+
+    },
+    "Store" : {
 
     }
   },

@@ -10,6 +10,18 @@
     "API key should not be empty" : {
 
     },
+    "API key:" : {
+
+    },
+    "Are you sure you want to remove the API key for %@?" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Edit API key" : {
+
+    },
     "Failed to encode API key for storage" : {
 
     },
@@ -17,6 +29,9 @@
 
     },
     "Failed to read file content of %@" : {
+
+    },
+    "Failed to remove API key" : {
 
     },
     "Failed to store API key" : {
@@ -29,6 +44,15 @@
 
     },
     "Pick a file to transform" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove API key" : {
+
+    },
+    "Remove API Key?" : {
 
     },
     "Store" : {

@@ -21,7 +21,7 @@ public struct TwoColumnView<LeftView: View, RightView: View>: View {
             leftView()
             Capsule()
                 .frame(width: 0.5)
-                .foregroundStyle(Color.secondary.opacity(0.5))
+                .foregroundStyle(.tertiary)
             rightView()
         }
     }

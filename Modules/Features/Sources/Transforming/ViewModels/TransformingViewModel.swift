@@ -13,34 +13,6 @@ import KamaalExtensions
 private let DEFAULT_PROVIDER: LLMProviders = .openai
 private let logger = KamaalLogger(from: TransformingViewModel.self, failOnError: true)
 
-enum OpenFilePickerErrors: Error, LocalizedError {
-    case failedToReadContent(cause: Error, url: URL)
-
-    var errorDescription: String? {
-        switch self {
-        case let .failedToReadContent(_, url):
-            return String(
-                format: NSLocalizedString("Failed to read file content of %@", bundle: .module, comment: ""),
-                url.absoluteString
-            )
-        }
-    }
-}
-
-enum StoreAPIKeyErrors: Error, LocalizedError {
-    case encodingFailure
-    case storageFailure(cause: Error)
-
-    var errorDescription: String? {
-        switch self {
-        case .encodingFailure:
-            return NSLocalizedString("Failed to encode API key for storage", bundle: .module, comment: "")
-        case .storageFailure:
-            return NSLocalizedString("Failed to store API key", bundle: .module, comment: "")
-        }
-    }
-}
-
 @MainActor
 @Observable
 final class TransformingViewModel {
@@ -66,6 +38,13 @@ final class TransformingViewModel {
 
     var apiKeyForSelectedLLMProvider: String? {
         apiKeys[selectedLLMProvider]
+    }
+
+    func removeAPIKey() -> Result<Void, RemoveAPIKeyErrors> {
+        Keychain.delete(forKey: selectedLLMProvider.key)
+            .onFailure { logger.error(label: "Failed to remove API key for \(selectedLLMProvider.name)", error: $0) }
+            .mapError { .generalFailure(cause: $0) }
+            .onSuccess { apiKeys[selectedLLMProvider] = nil }
     }
 
     func storeAPIKey(_ apiKey: String) -> Result<Void, StoreAPIKeyErrors> {
@@ -136,5 +115,44 @@ final class TransformingViewModel {
                 return String(data: data, encoding: .utf8)
             }
             .getOrNil() ?? nil
+    }
+}
+
+enum OpenFilePickerErrors: Error, LocalizedError {
+    case failedToReadContent(cause: Error, url: URL)
+
+    var errorDescription: String? {
+        switch self {
+        case let .failedToReadContent(_, url):
+            return String(
+                format: NSLocalizedString("Failed to read file content of %@", bundle: .module, comment: ""),
+                url.absoluteString
+            )
+        }
+    }
+}
+
+enum StoreAPIKeyErrors: Error, LocalizedError {
+    case encodingFailure
+    case storageFailure(cause: Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .encodingFailure:
+            return NSLocalizedString("Failed to encode API key for storage", bundle: .module, comment: "")
+        case .storageFailure:
+            return NSLocalizedString("Failed to store API key", bundle: .module, comment: "")
+        }
+    }
+}
+
+enum RemoveAPIKeyErrors: Error, LocalizedError {
+    case generalFailure(cause: Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .generalFailure:
+            return NSLocalizedString("Failed to remove API key", bundle: .module, comment: "")
+        }
     }
 }

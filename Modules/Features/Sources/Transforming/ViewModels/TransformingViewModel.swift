@@ -23,6 +23,7 @@ final class TransformingViewModel {
     private(set) var openedItem: FSItem?
     private var apiKeys: [LLMProviders: String]
     private(set) var loadingOpenedItem = false
+    var itemPathsToIgnore = ""
 
     init() {
         let llmProvider = DEFAULT_PROVIDER

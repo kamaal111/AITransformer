@@ -17,7 +17,7 @@ final class FSItem: Hashable, Equatable, Sendable {
     let url: URL
     let parent: FSItem?
 
-    private let content: String?
+    private let _content: String?
     private let _items: [FSItem]?
 
     private init(type: FSItemTypes, url: URL, parent: FSItem?, content: String?, items: [FSItem]?) {
@@ -29,7 +29,7 @@ final class FSItem: Hashable, Equatable, Sendable {
             assert(parent == nil, "Parent should always be a folder")
             self.parent = nil
         }
-        self.content = content
+        self._content = content
         self._items = items
     }
 
@@ -43,6 +43,13 @@ final class FSItem: Hashable, Equatable, Sendable {
 
     var name: String {
         url.lastPathComponent
+    }
+
+    var content: String {
+        assert(isFile, "Only file type should have content")
+        assert(_content != nil, "File should not have nil as content")
+
+        return _content ?? ""
     }
 
     var items: [FSItem] {
@@ -70,7 +77,7 @@ final class FSItem: Hashable, Equatable, Sendable {
             return self
         }
 
-        return FSItem(type: type, url: url, parent: parent, content: content, items: items)
+        return FSItem(type: type, url: url, parent: parent, content: _content, items: _items)
     }
 
     func setItems(_ items: [FSItem]) -> FSItem {

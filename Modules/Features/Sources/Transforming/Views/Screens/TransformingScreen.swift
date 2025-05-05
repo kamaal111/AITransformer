@@ -19,7 +19,7 @@ public struct TransformingScreen: View {
     public var body: some View {
         TwoColumnView(
             leftView: {
-                TransformingScreenSidebar(toast: $toast, viewModel: viewModel)
+                TransformingScreenSidebar(viewModel: viewModel)
                     .frame(maxWidth: MAX_SIDEBAR_WIDTH)
             },
             rightView: {

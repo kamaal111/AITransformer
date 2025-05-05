@@ -6,6 +6,7 @@
 //
 
 import AppKit
+import KamaalExtensions
 
 struct FSHelperConfig {
     let allowsMultipleSelection: Bool
@@ -47,13 +48,17 @@ enum FSHelper {
     }
 
     static func getDirectoryWithItems(in url: URL) async -> FSItem? {
+        await getDirectoryWithItems(in: url, ignores: [])
+    }
+
+    private static func getDirectoryWithItems(in url: URL, ignores: Set<String>) async -> FSItem? {
         guard checkIfIsDirectory(url) else { return nil }
 
         let fileManager = FileManager.default
         let itemURLs: [URL]
         do {
             itemURLs = try fileManager
-                .contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+                .contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
         } catch {
             return nil
         }
@@ -61,16 +66,25 @@ enum FSHelper {
         let parentFolder = makeEmptyRootParentFolder(for: url)
         let folder = FSItem.createAsFolder(url: url, items: [], parent: parentFolder)
         let items = await withTaskGroup(of: Optional<FSItem>.self, returning: [FSItem].self) { taskGroup in
-            for url in itemURLs {
+            var ignores: Set<String> = ignores
+            if let gitIgnoreFileURL = itemURLs.find(by: \.lastPathComponent, is: ".gitignore"),
+               let gitIgnoreFile = await getFile(from: gitIgnoreFileURL, parent: nil) {
+                ignores = GitIgnoreSpec
+                    .getFilePaths(gitIgnoreFile.content, previousIgnores: ignores, parent: parentFolder)
+            }
+
+            for itemURL in itemURLs
+            where !itemURL.lastPathComponent.hasPrefix(".") && !GitIgnoreSpec.ignore(ignores: ignores, url: itemURL) {
+                let ignoresCopy = ignores
                 taskGroup.addTask {
-                    if checkIfIsDirectory(url) {
-                        let folder = await getDirectoryWithItems(in: url)
+                    if checkIfIsDirectory(itemURL) {
+                        let folder = await getDirectoryWithItems(in: itemURL, ignores: ignoresCopy)
                         let folderItems = folder?.items ?? []
 
-                        return FSItem.createAsFolder(url: url, items: folderItems, parent: folder)
+                        return FSItem.createAsFolder(url: itemURL, items: folderItems, parent: folder)
                     }
 
-                    return await getFile(from: url, parent: folder)
+                    return await getFile(from: itemURL, parent: folder)
                 }
             }
 

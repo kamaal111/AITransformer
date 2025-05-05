@@ -9,8 +9,6 @@ import SwiftUI
 import DesignSystem
 
 struct TransformingScreenSidebar: View {
-    @Binding var toast: Toast?
-
     @State var viewModel: TransformingViewModel
 
     var body: some View {
@@ -28,10 +26,11 @@ struct TransformingScreenSidebar: View {
             .takeWidthEagerly(alignment: .center)
             .padding(.bottom, .small)
             .disabled(viewModel.loadingOpenedItem)
-            Text("Files")
-                .font(.headline)
-                .bold()
             if let openedItem = viewModel.openedItem {
+                Text("Files")
+                    .font(.headline)
+                    .bold()
+                AppTextField(text: $viewModel.itemPathsToIgnore, localizedTitle: "Paths to ignore", bundle: .module)
                 List {
                     ListItemStructureView(item: openedItem)
                 }
@@ -51,7 +50,7 @@ struct TransformingScreenSidebar: View {
     @Previewable @State var viewModel = TransformingViewModel()
 
     TwoColumnView(
-        leftView: { TransformingScreenSidebar(toast: .constant(nil), viewModel: viewModel) },
+        leftView: { TransformingScreenSidebar(viewModel: viewModel) },
         rightView: { Text("hi").takeWidthEagerly() }
     )
 }

@@ -19,8 +19,9 @@ final class FSItem: Hashable, Equatable, Sendable {
 
     private let _content: String?
     private let _items: [FSItem]?
+    let isLazy: Bool
 
-    private init(type: FSItemTypes, url: URL, parent: FSItem?, content: String?, items: [FSItem]?) {
+    private init(type: FSItemTypes, url: URL, parent: FSItem?, content: String?, items: [FSItem]?, isLazy: Bool) {
         self.type = type
         self.url = url
         if parent?.type == .folder {
@@ -31,6 +32,15 @@ final class FSItem: Hashable, Equatable, Sendable {
         }
         self._content = content
         self._items = items
+        self.isLazy = isLazy
+    }
+
+    var content: String {
+        assert(isFile, "Only file type should have content")
+        assert(_content != nil, "File should not have nil as content")
+        assert(!isLazy, "Exchange file with non lazy one with `getFileWithContent` first")
+
+        return _content ?? ""
     }
 
     var isFolder: Bool {
@@ -45,11 +55,12 @@ final class FSItem: Hashable, Equatable, Sendable {
         url.lastPathComponent
     }
 
-    var content: String {
-        assert(isFile, "Only file type should have content")
-        assert(_content != nil, "File should not have nil as content")
+    var isEmpty: Bool {
+        if isFile {
+            return content.isEmpty
+        }
 
-        return _content ?? ""
+        return items.isEmpty
     }
 
     var items: [FSItem] {
@@ -57,6 +68,24 @@ final class FSItem: Hashable, Equatable, Sendable {
         assert(_items != nil, "Folder should not have nil as items")
 
         return _items ?? []
+    }
+
+    func getFileWithContent() -> FSItem {
+        assert(isFile)
+        if _content != nil {
+            return self
+        }
+
+        assert(isLazy)
+        let content: String
+        do {
+            content = try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            assertionFailure("What happened here?")
+            return self
+        }
+
+        return Self.createAsFile(url: url, content: content, parent: parent)
     }
 
     func hash(into hasher: inout Hasher) {
@@ -77,7 +106,7 @@ final class FSItem: Hashable, Equatable, Sendable {
             return self
         }
 
-        return FSItem(type: type, url: url, parent: parent, content: _content, items: _items)
+        return FSItem(type: type, url: url, parent: parent, content: _content, items: _items, isLazy: isLazy)
     }
 
     func setItems(_ items: [FSItem]) -> FSItem {
@@ -90,11 +119,15 @@ final class FSItem: Hashable, Equatable, Sendable {
     }
 
     static func createAsFile(url: URL, content: String, parent: FSItem?) -> FSItem {
-        .init(type: .file, url: url, parent: parent, content: content, items: nil)
+        .init(type: .file, url: url, parent: parent, content: content, items: nil, isLazy: false)
+    }
+
+    static func createAsLazyFile(url: URL, parent: FSItem?) -> FSItem {
+        .init(type: .file, url: url, parent: parent, content: nil, items: nil, isLazy: true)
     }
 
     static func createAsFolder(url: URL, items: [FSItem], parent: FSItem?) -> FSItem {
-        .init(type: .folder, url: url, parent: parent, content: nil, items: items)
+        .init(type: .folder, url: url, parent: parent, content: nil, items: items, isLazy: false)
     }
 
     static func == (lhs: FSItem, rhs: FSItem) -> Bool {

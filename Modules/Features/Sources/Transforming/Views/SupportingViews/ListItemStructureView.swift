@@ -27,7 +27,7 @@ struct ListItemStructureView: View {
                     .font(.system(size: 2))
                     .foregroundStyle(.tertiary)
             }
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Image(systemName: item.isFolder ? "folder" : "text.page")
                     Text(item.name)
@@ -45,6 +45,6 @@ struct ListItemStructureView: View {
 
 #Preview {
     ListItemStructureView(
-        item: .createAsFile(url: URL.applicationDirectory.appendingPathComponent("Xcode.app"), content: "", parent: nil)
+        item: .createAsLazyFile(url: URL.applicationDirectory.appendingPathComponent("Xcode.app"), parent: nil)
     )
 }

@@ -70,7 +70,7 @@ final class TransformingViewModel {
     }
 
     private func openItem(on url: URL) async {
-        guard let item = await FSHelper.getItem(from: url) else { return }
+        guard let item = await FSHelper.getItem(from: url, lazily: true) else { return }
 
         setOpenedItem(item)
         logger.info("Opened file: \(item.name)")

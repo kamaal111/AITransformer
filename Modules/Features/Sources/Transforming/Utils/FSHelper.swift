@@ -37,21 +37,21 @@ enum FSHelper {
         return itemExists && isDirectory.boolValue
     }
 
-    static func getItem(from url: URL) async -> FSItem? {
+    static func getItem(from url: URL, lazily: Bool) async -> FSItem? {
         if checkIfIsDirectory(url) {
-            return await getDirectoryWithItems(in: url)
+            return await getDirectoryWithItems(in: url, lazily: lazily)
         }
 
         let parentFolder = makeEmptyRootParentFolder(for: url)
 
-        return await getFile(from: url, parent: parentFolder)
+        return await getFile(from: url, parent: parentFolder, lazily: lazily)
     }
 
-    static func getDirectoryWithItems(in url: URL) async -> FSItem? {
-        await getDirectoryWithItems(in: url, ignores: [])
+    static func getDirectoryWithItems(in url: URL, lazily: Bool) async -> FSItem? {
+        await getDirectoryWithItems(in: url, ignores: [], lazily: lazily)
     }
 
-    private static func getDirectoryWithItems(in url: URL, ignores: Set<String>) async -> FSItem? {
+    private static func getDirectoryWithItems(in url: URL, ignores: Set<String>, lazily: Bool) async -> FSItem? {
         guard checkIfIsDirectory(url) else { return nil }
 
         let fileManager = FileManager.default
@@ -68,7 +68,7 @@ enum FSHelper {
         let items = await withTaskGroup(of: Optional<FSItem>.self, returning: [FSItem].self) { taskGroup in
             var ignores: Set<String> = ignores
             if let gitIgnoreFileURL = itemURLs.find(by: \.lastPathComponent, is: ".gitignore"),
-               let gitIgnoreFile = await getFile(from: gitIgnoreFileURL, parent: nil) {
+               let gitIgnoreFile = await getFile(from: gitIgnoreFileURL, parent: nil, lazily: false) {
                 ignores = GitIgnoreSpec
                     .getFilePaths(gitIgnoreFile.content, previousIgnores: ignores, parent: parentFolder)
             }
@@ -78,13 +78,13 @@ enum FSHelper {
                 let ignoresCopy = ignores
                 taskGroup.addTask {
                     if checkIfIsDirectory(itemURL) {
-                        let folder = await getDirectoryWithItems(in: itemURL, ignores: ignoresCopy)
+                        let folder = await getDirectoryWithItems(in: itemURL, ignores: ignoresCopy, lazily: lazily)
                         let folderItems = folder?.items ?? []
 
                         return FSItem.createAsFolder(url: itemURL, items: folderItems, parent: folder)
                     }
 
-                    return await getFile(from: itemURL, parent: folder)
+                    return await getFile(from: itemURL, parent: folder, lazily: lazily)
                 }
             }
 
@@ -104,15 +104,23 @@ enum FSHelper {
         return folder.setItems(items)
     }
 
-    static func getFile(from url: URL, parent: FSItem?) async -> FSItem? {
+    static func getFile(from url: URL, parent: FSItem?, lazily: Bool) async -> FSItem? {
         let fileContent: String
-        do {
-            fileContent = try String(contentsOf: url, encoding: .utf8)
-        } catch {
-            return nil
+        if lazily {
+            fileContent = ""
+        } else {
+            do {
+                fileContent = try String(contentsOf: url, encoding: .utf8)
+            } catch {
+                return nil
+            }
         }
 
-        var file = FSItem.createAsFile(url: url, content: fileContent, parent: parent)
+        var file = if lazily {
+            FSItem.createAsLazyFile(url: url, parent: parent)
+        } else {
+            FSItem.createAsFile(url: url, content: fileContent, parent: parent)
+        }
         if file.parent == nil {
             let parentFolder = makeEmptyRootParentFolder(for: url).setItems([file])
             file = file.setParent(parentFolder)

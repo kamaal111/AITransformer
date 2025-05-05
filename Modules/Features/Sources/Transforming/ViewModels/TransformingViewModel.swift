@@ -56,22 +56,32 @@ final class TransformingViewModel {
             .onSuccess { apiKeys[selectedLLMProvider] = apiKey }
     }
 
-    func openFilePicker() -> Result<Void, OpenFilePickerErrors> {
+    func openFilePicker() async -> Result<Void, OpenFilePickerErrors> {
         let fileURLs = FSHelper.openFilePicker(config: .init(allowsMultipleSelection: true))
         guard let fileURLs else { return .success(()) }
 
-        let results = fileURLs
-            .map { url in
-                FSHelper.readFileContent(from: url)
-                    .mapError { error in OpenFilePickerErrors.failedToReadContent(cause: error, url: url) }
-                    .onFailure { error in logger.error(label: "Failed to read file content", error: error) }
-            }
-            .reduce((successes: [FileItem](), failures: [OpenFilePickerErrors]()), { result, current in
-                switch current {
-                case let .failure(failure): return (result.successes, result.failures.appended(failure))
-                case let .success(success): return (result.successes.appended(success), result.failures)
+        let results = await withTaskGroup(
+            of: Result<FileItem, OpenFilePickerErrors>.self,
+            returning: (successes: [FileItem], failures: [OpenFilePickerErrors]).self
+        ) { taskGroup in
+            for url in fileURLs {
+                taskGroup.addTask {
+                    await FSHelper.readFileContent(from: url)
+                        .mapError { error in OpenFilePickerErrors.failedToReadContent(cause: error, url: url) }
+                        .onFailure { error in logger.error(label: "Failed to read file content", error: error) }
                 }
-            })
+            }
+
+            var groupedResults = (successes: [FileItem](), failures: [OpenFilePickerErrors]())
+            for await result in taskGroup {
+                switch result {
+                case let .failure(failure): groupedResults.failures.append(failure)
+                case let .success(success): groupedResults.successes.append((success))
+                }
+            }
+
+            return groupedResults
+        }
         addToOpenedFiles(results.successes)
 
         if let firstError = results.failures.first {

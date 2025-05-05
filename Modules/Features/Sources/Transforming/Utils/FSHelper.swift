@@ -28,7 +28,7 @@ enum FSHelper {
         return panel.urls
     }
 
-    static func readFileContent(from url: URL) -> Result<FileItem, Error> {
+    static func readFileContent(from url: URL) async -> Result<FileItem, Error> {
         let fileContent: String
         do {
             fileContent = try String(contentsOf: url, encoding: .utf8)

@@ -18,7 +18,9 @@
 		2C7E03B22DBFCB2D004DCB3C /* Exceptions for "Modules" folder in "AITransformer" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				DesignSystem,
 				Features,
+				"swift-validator",
 			);
 			target = 2C7E03A02DBFC994004DCB3C /* AITransformer */;
 		};

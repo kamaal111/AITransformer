@@ -33,8 +33,10 @@ struct TransformingScreenSidebar: View {
     }
 
     private func handleFileOpenClick() {
-        viewModel.openFilePicker()
-            .onFailure { toast = .error(message: $0.localizedDescription) }
+        Task {
+            await viewModel.openFilePicker()
+                .onFailure { toast = .error(message: $0.localizedDescription) }
+        }
     }
 }
 

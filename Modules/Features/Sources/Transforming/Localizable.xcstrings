@@ -25,12 +25,6 @@
     "Failed to encode API key for storage" : {
 
     },
-    "Failed to read file content" : {
-
-    },
-    "Failed to read file content of %@" : {
-
-    },
     "Failed to remove API key" : {
 
     },

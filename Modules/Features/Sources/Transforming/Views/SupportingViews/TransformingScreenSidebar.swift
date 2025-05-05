@@ -23,9 +23,10 @@ struct TransformingScreenSidebar: View {
                     .bold()
                     .foregroundStyle(Color.accentColor)
             }
-            ForEach(viewModel.openedFiles, id: \.url) { file in
-                Text(file.name)
-            }
+            // TODO: List with folder structure
+//            ForEach(viewModel.openedFiles, id: \.url) { file in
+//                Text(file.name)
+//            }
         }
         .takeHeightEagerly(alignment: .top)
         .padding(.vertical, .medium)
@@ -33,10 +34,7 @@ struct TransformingScreenSidebar: View {
     }
 
     private func handleFileOpenClick() {
-        Task {
-            await viewModel.openFilePicker()
-                .onFailure { toast = .error(message: $0.localizedDescription) }
-        }
+        Task { await viewModel.openFilePicker() }
     }
 }
 

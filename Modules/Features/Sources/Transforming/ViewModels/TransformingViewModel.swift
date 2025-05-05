@@ -20,14 +20,14 @@ final class TransformingViewModel {
         didSet { onSelectedLLMProviderChange() }
     }
     var selectedLLMModel: LLMModel
-    private(set) var openedFiles: [FileItem]
+    private(set) var openedItem: FSItem?
     private var apiKeys: [LLMProviders: String]
 
     init() {
         let llmProvider = DEFAULT_PROVIDER
         self.selectedLLMProvider = llmProvider
         self.selectedLLMModel = llmProvider.models.first!
-        self.openedFiles = []
+        self.openedItem = nil
 
         if let initialAPIKey = Self.getAPIKey(for: llmProvider) {
             self.apiKeys = [llmProvider: initialAPIKey]
@@ -56,41 +56,16 @@ final class TransformingViewModel {
             .onSuccess { apiKeys[selectedLLMProvider] = apiKey }
     }
 
-    func openFilePicker() async -> Result<Void, OpenFilePickerErrors> {
-        let fileURLs = FSHelper.openFilePicker(config: .init(allowsMultipleSelection: true))
-        guard let fileURLs else { return .success(()) }
+    func openFilePicker() async {
+        let openFilePickerConfig = FSHelperConfig(allowsMultipleSelection: false, canChooseDirectories: true)
+        guard let fileURLs = FSHelper.openFilePicker(config: openFilePickerConfig) else { return }
 
-        let results = await withTaskGroup(
-            of: Result<FileItem, OpenFilePickerErrors>.self,
-            returning: (successes: [FileItem], failures: [OpenFilePickerErrors]).self
-        ) { taskGroup in
-            for url in fileURLs {
-                taskGroup.addTask {
-                    await FSHelper.readFileContent(from: url)
-                        .mapError { error in OpenFilePickerErrors.failedToReadContent(cause: error, url: url) }
-                        .onFailure { error in logger.error(label: "Failed to read file content", error: error) }
-                }
-            }
+        assert(fileURLs.count == 1, "If not nil, there should be atleast 1 URL")
+        guard let fileURL = fileURLs.first else { return }
+        guard let item = await FSHelper.getItem(from: fileURL) else { return }
 
-            var groupedResults = (successes: [FileItem](), failures: [OpenFilePickerErrors]())
-            for await result in taskGroup {
-                switch result {
-                case let .failure(failure): groupedResults.failures.append(failure)
-                case let .success(success): groupedResults.successes.append((success))
-                }
-            }
-
-            return groupedResults
-        }
-        addToOpenedFiles(results.successes)
-
-        if let firstError = results.failures.first {
-            return .failure(firstError)
-        }
-
-        logger.info("Opened \(results.successes.count) files")
-
-        return .success(())
+        setOpenedItem(item)
+        logger.info("Opened file: \(item.name)")
     }
 
     private func onSelectedLLMProviderChange() {
@@ -102,20 +77,8 @@ final class TransformingViewModel {
         }
     }
 
-    private func addToOpenedFiles(_ file: FileItem) {
-        addToOpenedFiles([file])
-    }
-
-    private func addToOpenedFiles(_ files: [FileItem]) {
-        var newOpenedFiles = openedFiles
-        for file in files {
-            if let existingFileIndex = openedFiles.findIndex(by: \.url, is: file.url) {
-                newOpenedFiles[existingFileIndex] = file
-            } else {
-                newOpenedFiles = newOpenedFiles.prepended(file)
-            }
-        }
-        openedFiles = newOpenedFiles
+    private func setOpenedItem(_ item: FSItem) {
+        openedItem = item
     }
 
     private static func getAPIKey(for provider: LLMProviders) -> String? {
@@ -125,20 +88,6 @@ final class TransformingViewModel {
                 return String(data: data, encoding: .utf8)
             }
             .getOrNil() ?? nil
-    }
-}
-
-enum OpenFilePickerErrors: Error, LocalizedError {
-    case failedToReadContent(cause: Error, url: URL)
-
-    var errorDescription: String? {
-        switch self {
-        case let .failedToReadContent(_, url):
-            return String(
-                format: NSLocalizedString("Failed to read file content of %@", bundle: .module, comment: ""),
-                url.absoluteString
-            )
-        }
     }
 }
 

@@ -19,14 +19,15 @@ struct TransformingScreenSidebar: View {
                 .font(.headline)
                 .bold()
             Button(action: handleFileOpenClick) {
-                Text("Pick a file to transform")
+                Text("Open a folder to transform")
                     .bold()
                     .foregroundStyle(Color.accentColor)
             }
-            // TODO: List with folder structure
-//            ForEach(viewModel.openedFiles, id: \.url) { file in
-//                Text(file.name)
-//            }
+            if let openedItem = viewModel.openedItem {
+                List {
+                    ListItemStructureView(item: openedItem)
+                }
+            }
         }
         .takeHeightEagerly(alignment: .top)
         .padding(.vertical, .medium)

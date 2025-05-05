@@ -34,10 +34,10 @@
     "Files" : {
 
     },
-    "OpenAI" : {
+    "Open a folder to transform" : {
 
     },
-    "Pick a file to transform" : {
+    "OpenAI" : {
 
     },
     "Remove" : {
@@ -50,6 +50,9 @@
 
     },
     "Store" : {
+
+    },
+    "􀀁" : {
 
     }
   },

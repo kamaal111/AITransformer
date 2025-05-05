@@ -52,7 +52,8 @@ enum FSHelper {
         let fileManager = FileManager.default
         let itemURLs: [URL]
         do {
-            itemURLs = try fileManager.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [])
+            itemURLs = try fileManager
+                .contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
         } catch {
             return nil
         }

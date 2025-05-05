@@ -19,6 +19,9 @@
     "Cancel" : {
 
     },
+    "Click here to upload items" : {
+
+    },
     "Edit API key" : {
 
     },
@@ -32,9 +35,6 @@
 
     },
     "Files" : {
-
-    },
-    "Open a folder to transform" : {
 
     },
     "OpenAI" : {

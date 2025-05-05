@@ -22,6 +22,7 @@ final class TransformingViewModel {
     var selectedLLMModel: LLMModel
     private(set) var openedItem: FSItem?
     private var apiKeys: [LLMProviders: String]
+    private(set) var loadingOpenedItem = false
 
     init() {
         let llmProvider = DEFAULT_PROVIDER
@@ -57,12 +58,18 @@ final class TransformingViewModel {
     }
 
     func openFilePicker() async {
-        let openFilePickerConfig = FSHelperConfig(allowsMultipleSelection: false, canChooseDirectories: true)
-        guard let fileURLs = FSHelper.openFilePicker(config: openFilePickerConfig) else { return }
+        await withLoadingOpeningItem {
+            let openFilePickerConfig = FSHelperConfig(allowsMultipleSelection: false, canChooseDirectories: true)
+            guard let fileURLs = FSHelper.openFilePicker(config: openFilePickerConfig) else { return }
 
-        assert(fileURLs.count == 1, "If not nil, there should be atleast 1 URL")
-        guard let fileURL = fileURLs.first else { return }
-        guard let item = await FSHelper.getItem(from: fileURL) else { return }
+            assert(fileURLs.count == 1, "If not nil, there should be atleast 1 URL")
+            guard let fileURL = fileURLs.first else { return }
+            await openItem(on: fileURL)
+        }
+    }
+
+    private func openItem(on url: URL) async {
+        guard let item = await FSHelper.getItem(from: url) else { return }
 
         setOpenedItem(item)
         logger.info("Opened file: \(item.name)")
@@ -79,6 +86,14 @@ final class TransformingViewModel {
 
     private func setOpenedItem(_ item: FSItem) {
         openedItem = item
+    }
+
+    private func withLoadingOpeningItem<T: Sendable>(_ handler: () async -> T) async -> T {
+        loadingOpenedItem = true
+        let result = await handler()
+        loadingOpenedItem = false
+
+        return result
     }
 
     private static func getAPIKey(for provider: LLMProviders) -> String? {

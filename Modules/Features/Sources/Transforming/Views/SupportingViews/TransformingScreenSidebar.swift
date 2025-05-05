@@ -15,21 +15,29 @@ struct TransformingScreenSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading) {
+            Button(action: handleFileOpenClick) {
+                HStack {
+                    Text("Click here to upload items")
+                        .lineLimit(2)
+                    Image(systemName: "square.and.arrow.up.fill")
+                }
+                .bold()
+                .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .takeWidthEagerly(alignment: .center)
+            .padding(.bottom, .small)
+            .disabled(viewModel.loadingOpenedItem)
             Text("Files")
                 .font(.headline)
                 .bold()
-            Button(action: handleFileOpenClick) {
-                Text("Open a folder to transform")
-                    .bold()
-                    .foregroundStyle(Color.accentColor)
-            }
             if let openedItem = viewModel.openedItem {
                 List {
                     ListItemStructureView(item: openedItem)
                 }
             }
         }
-        .takeHeightEagerly(alignment: .top)
+        .takeSizeEagerly(alignment: .topLeading)
         .padding(.vertical, .medium)
         .padding(.horizontal, .medium)
     }

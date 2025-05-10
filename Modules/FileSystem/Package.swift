@@ -9,8 +9,13 @@ let package = Package(
     products: [
         .library(name: "FileSystem", targets: ["FileSystem"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/Kamaalio/KamaalSwift.git", "2.3.1"..<"3.0.0"),
+    ],
     targets: [
-        .target(name: "FileSystem"),
+        .target(name: "FileSystem", dependencies: [
+            .product(name: "KamaalExtensions", package: "KamaalSwift"),
+        ]),
         .testTarget(name: "FileSystemTests", dependencies: ["FileSystem"]),
     ]
 )

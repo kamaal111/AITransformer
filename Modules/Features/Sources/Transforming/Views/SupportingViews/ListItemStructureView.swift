@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import FileSystem
 
 struct ListItemStructureView: View {
     let item: FSItem

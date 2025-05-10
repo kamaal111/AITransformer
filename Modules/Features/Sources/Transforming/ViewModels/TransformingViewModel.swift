@@ -63,7 +63,11 @@ final class TransformingViewModel {
 
     func openFilePicker() async {
         await withLoadingOpeningItem {
-            let openFilePickerConfig = FileSystemOpenFilePickerConfig(allowsMultipleSelection: false, canChooseDirectories: true)
+            let openFilePickerConfig = FileSystemOpenFilePickerConfig(
+                allowsMultipleSelection: false,
+                canChooseDirectories: true,
+                canChooseFiles: false
+            )
             guard let fileURLs = fs.openFilePicker(config: openFilePickerConfig) else { return }
 
             assert(fileURLs.count == 1, "If not nil, there should be atleast 1 URL")
@@ -73,7 +77,7 @@ final class TransformingViewModel {
     }
 
     private func openItem(on url: URL) async {
-//        await fs.getDirectoryInfo(for: url)
+//        let directory = await fs.getDirectoryInfo(for: url, ignoringRuleFilenames: [".gitignore"])
         guard let item = await FSHelper.getItem(from: url, lazily: true) else { return }
 
         setOpenedItem(item)

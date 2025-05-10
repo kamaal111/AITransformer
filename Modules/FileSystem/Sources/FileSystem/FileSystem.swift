@@ -7,6 +7,7 @@
 
 import Cocoa
 import Foundation
+import KamaalExtensions
 
 public enum FileSystemGetDirectoryInfoErrors: Error {
     case notADirectory
@@ -17,10 +18,12 @@ public enum FileSystemGetDirectoryInfoErrors: Error {
 public struct FileSystemOpenFilePickerConfig {
     public let allowsMultipleSelection: Bool
     public let canChooseDirectories: Bool
+    public let canChooseFiles: Bool
 
-    public init(allowsMultipleSelection: Bool = false, canChooseDirectories: Bool = false) {
+    public init(allowsMultipleSelection: Bool, canChooseDirectories: Bool, canChooseFiles: Bool) {
         self.allowsMultipleSelection = allowsMultipleSelection
         self.canChooseDirectories = canChooseDirectories
+        self.canChooseFiles = canChooseFiles
     }
 }
 
@@ -36,25 +39,28 @@ public actor FileSystem: Sendable {
     }
 
     @MainActor
-    public func openFilePicker(config: FileSystemOpenFilePickerConfig = .init()) -> [URL]? {
+    public func openFilePicker(config: FileSystemOpenFilePickerConfig) -> [URL]? {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = config.allowsMultipleSelection
         panel.canChooseDirectories = config.canChooseDirectories
+        panel.canChooseFiles = config.canChooseFiles
         guard panel.runModal() == .OK else { return nil }
 
         return panel.urls
     }
 
-    public func getDirectoryInfo(for url: URL) async -> Result<DirectoryInfo, FileSystemGetDirectoryInfoErrors> {
-        await getDirectoryInfo(for: url, parent: nil)
+    public func getDirectoryInfo(
+        for url: URL,
+        ignoringRuleFilenames: [String] = []
+    ) -> Result<DirectoryInfo, FileSystemGetDirectoryInfoErrors> {
+        getDirectoryInfo(for: url, parent: nil, ignoringRuleFilenames: ignoringRuleFilenames)
     }
 
-    public func findDirectories(_ match: String, in directory: DirectoryInfo) async -> [DirectoryInfo] {
+    public func findDirectories(_ match: String, in directory: DirectoryInfo) -> [DirectoryInfo] {
         let directoryURLString = directory.url.absoluteString
         var matches: [DirectoryInfo] = []
-        for currentDirectory in await listNestedDirectories(in: directory) {
-            var currentDirectoryURLComponents = currentDirectory.url.absoluteString
-                .split(separator: directoryURLString)
+        for currentDirectory in listNestedDirectories(in: directory) {
+            var currentDirectoryURLComponents = currentDirectory.url.absoluteString.split(separator: directoryURLString)
             if currentDirectoryURLComponents.count > 1 {
                 currentDirectoryURLComponents.removeFirst()
             }
@@ -67,11 +73,11 @@ public actor FileSystem: Sendable {
         return matches
     }
 
-    public func listNestedDirectories(in directory: DirectoryInfo) async ->[DirectoryInfo] {
+    public func listNestedDirectories(in directory: DirectoryInfo) ->[DirectoryInfo] {
         var directories: [DirectoryInfo] = []
-        for currentDirectory in await directory.getDirectories() {
+        for currentDirectory in directory.directories {
             directories.append(currentDirectory)
-            let nestedDirectories = await listNestedDirectories(in: currentDirectory)
+            let nestedDirectories = listNestedDirectories(in: currentDirectory)
             directories.append(contentsOf: nestedDirectories)
         }
 
@@ -93,10 +99,24 @@ public actor FileSystem: Sendable {
         fileManager.fileExists(atPath: url.path)
     }
 
+    public func getFileContent(_ url: URL) -> String? {
+        guard isFile(url) else {
+            assertionFailure("Get content on files")
+            return nil
+        }
+
+        do {
+            return try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            return nil
+        }
+    }
+
     private func getDirectoryInfo(
         for url: URL,
-        parent: DirectoryInfo?
-    ) async -> Result<DirectoryInfo, FileSystemGetDirectoryInfoErrors> {
+        parent: DirectoryInfo?,
+        ignoringRuleFilenames: [String]
+    ) -> Result<DirectoryInfo, FileSystemGetDirectoryInfoErrors> {
         guard itemExists(url) else { return .failure(.doesNotExist) }
         guard isDirectory(url) else { return .failure(.notADirectory) }
 
@@ -108,25 +128,55 @@ public actor FileSystem: Sendable {
         }
 
         let fetchingDirectoryInfo = DirectoryInfo(url: url, parent: parent, files: [], directories: [])
-        var fetchingDirectoryInfoDirectoriess: [DirectoryInfo] = []
-        var fetchingDirectoryInfoFiles: [FileInfo] = []
-        for currentURL in itemURLs {
-            guard itemExists(currentURL) else { continue }
+        let ignores: Set<String>
+        if ignoringRuleFilenames.isEmpty {
+            ignores = []
+        } else {
+            ignores = itemURLs
+                .reduce(Set<String>()) { partialResult, itemURL in
+                    guard ignoringRuleFilenames.contains(itemURL.lastPathComponent) else { return partialResult }
+                    guard isFile(itemURL) else { return partialResult }
+                    guard let content = getFileContent(itemURL) else { return partialResult }
 
-            if isDirectory(currentURL) {
-                let directoryResult = await getDirectoryInfo(for: currentURL, parent: fetchingDirectoryInfo)
-                switch directoryResult {
-                case .failure: continue
-                case let .success(success):
-                    fetchingDirectoryInfoDirectoriess.append(success)
+                    return IgnoreSpec
+                        .getFilePaths(
+                            content,
+                            previousIgnores: partialResult,
+                            parent: fetchingDirectoryInfo
+                        )
                 }
-            } else if isFile(currentURL) {
-                let file = FileInfo(url: currentURL, parent: fetchingDirectoryInfo)
-                fetchingDirectoryInfoFiles.append(file)
-            }
         }
+        let (fetchingDirectoryInfoFiles, fetchingDirectoryInfoDirectoriess) = itemURLs
+            .reduce((files: [FileInfo](), directories: [DirectoryInfo]())) { partialResult, itemURL in
+                guard itemExists(itemURL) else {
+                    assertionFailure("Should exist at this point")
+                    return partialResult
+                }
+                guard !itemURL.lastPathComponent.hasPrefix(".") else { return partialResult }
+                guard !IgnoreSpec.ignore(ignores: ignores, url: itemURL) else { return partialResult }
 
-        let fetchingDirectoriesWithItems = await fetchingDirectoryInfo
+                if isDirectory(itemURL) {
+                    let directoryResult = getDirectoryInfo(
+                        for: itemURL,
+                        parent: fetchingDirectoryInfo,
+                        ignoringRuleFilenames: ignoringRuleFilenames
+                    )
+                    switch directoryResult {
+                    case .failure: return partialResult
+                    case let .success(success):
+                        return (files: partialResult.files, directories: partialResult.directories.appended(success))
+                    }
+                }
+
+                if isFile(itemURL) {
+                    let file = FileInfo(url: itemURL, parent: fetchingDirectoryInfo)
+                    return (files: partialResult.files.appended(file), directories: partialResult.directories)
+                }
+
+                return partialResult
+            }
+
+        let fetchingDirectoriesWithItems = fetchingDirectoryInfo
             .setFiles(fetchingDirectoryInfoFiles)
             .setDirectories(fetchingDirectoryInfoDirectoriess)
 
@@ -134,11 +184,11 @@ public actor FileSystem: Sendable {
     }
 }
 
-public actor DirectoryInfo: Hashable, Equatable, Sendable {
-    fileprivate let url: URL
-    private let parent: DirectoryInfo?
-    private var files: [FileInfo]
-    private var directories: [DirectoryInfo]
+public final class DirectoryInfo: Hashable, Equatable, Sendable {
+    public let url: URL
+    public let parent: DirectoryInfo?
+    public let files: [FileInfo]
+    public let directories: [DirectoryInfo]
 
     public init(url: URL, parent: DirectoryInfo?, files: [FileInfo], directories: [DirectoryInfo]) {
         self.url = url
@@ -147,34 +197,18 @@ public actor DirectoryInfo: Hashable, Equatable, Sendable {
         self.directories = directories
     }
 
-    public func getURL() -> URL {
-        url
-    }
+    public var name: String { url.lastPathComponent }
 
-    public func getParent() -> DirectoryInfo? {
-        parent
-    }
+    public var fileCount: Int { files.count }
 
-    public func getFiles() -> [FileInfo] {
-        files
-    }
+    public var directoryCount: Int { directories.count }
 
-    @discardableResult
     public func setFiles(_ files: [FileInfo]) -> Self {
-        self.files = files
-
-        return self
+        Self(url: url, parent: parent, files: files, directories: directories)
     }
 
-    public func getDirectories() -> [DirectoryInfo] {
-        directories
-    }
-
-    @discardableResult
     public func setDirectories(_ directories: [DirectoryInfo]) -> Self {
-        self.directories = directories
-
-        return self
+        Self(url: url, parent: parent, files: files, directories: directories)
     }
 
     nonisolated public func hash(into hasher: inout Hasher) {
@@ -193,5 +227,65 @@ public struct FileInfo: Hashable, Equatable, Sendable {
     public init(url: URL, parent: DirectoryInfo?) {
         self.url = url
         self.parent = parent
+    }
+
+    public var name: String { url.lastPathComponent }
+}
+
+enum IgnoreSpec {
+    static func getFilePaths(_ content: String, previousIgnores: Set<String>, parent: DirectoryInfo?) -> Set<String> {
+        content
+            .splitLines
+            .reduce(previousIgnores, { result, current in
+                guard let formatted = formatLine(current) else { return result }
+
+                var result = result
+                if shouldAddLineToIgnores(formatted) {
+                    result.insert(formatted)
+                } else if shouldRemoveFromIgnores(formatted, ignores: result) {
+                    result.remove(formatted)
+                }
+
+                return result
+            })
+    }
+
+    static func ignore(ignores: Set<String>, url: URL) -> Bool {
+        ignores.contains(url.lastPathComponent)
+    }
+
+    private static func shouldRemoveFromIgnores(_ line: String, ignores: Set<String>) -> Bool {
+        assert(formatLine(line) == line, "Should be already formatted before evulating")
+        assert(!line.isEmpty, "Should not be empty at this point")
+
+        return ignores.contains(line) && line.hasPrefix("#")
+    }
+
+    private static func shouldAddLineToIgnores(_ line: String) -> Bool {
+        assert(formatLine(line) == line, "Should be already formatted before evulating")
+        assert(!line.isEmpty, "Should not be empty at this point")
+
+        return !line.hasPrefix("#")
+    }
+
+    private static func formatLine(_ line: some StringProtocol) -> String? {
+        var formatted = String(line.trimmingByWhitespacesAndNewLines)
+        guard !formatted.isEmpty else { return nil }
+
+        if formatted.hasSuffix("/") {
+            formatted = String(formatted.dropLast())
+            guard !formatted.isEmpty else { return nil }
+        }
+        if formatted.hasPrefix("./") {
+            formatted = String(formatted.range(from: 2))
+            guard !formatted.isEmpty else { return nil }
+        }
+
+        // Very optimistic, but will bother later when it gets in the way!
+        // TODO: Do something with parent probably
+        guard let name = formatted.split(separator: "/").last else { return nil }
+        guard !name.isEmpty else { return nil }
+
+        return String(name)
     }
 }

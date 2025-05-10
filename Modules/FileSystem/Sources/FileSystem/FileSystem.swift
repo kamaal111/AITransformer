@@ -184,7 +184,51 @@ public actor FileSystem: Sendable {
     }
 }
 
-public final class DirectoryInfo: Hashable, Equatable, Sendable {
+public enum FileSystemTypes: Sendable {
+    case file
+    case directory
+}
+
+public protocol FileSystemItemable: Hashable, Equatable, Sendable {
+    var url: URL { get }
+    var parent: DirectoryInfo? { get }
+    var type: FileSystemTypes { get }
+    var items: [FileSystemItem] { get }
+}
+
+extension FileSystemItemable {
+    public var name: String { url.lastPathComponent }
+
+    public var isDirectory: Bool { type == .directory }
+
+    public var isFile: Bool { type == .file }
+
+    public var asItem: FileSystemItem { .init(url: url, parent: parent, type: type, items: items) }
+}
+
+public final class FileSystemItem: FileSystemItemable {
+    public let url: URL
+    public let parent: DirectoryInfo?
+    public let type: FileSystemTypes
+    public let items: [FileSystemItem]
+
+    public init(url: URL, parent: DirectoryInfo?, type: FileSystemTypes, items: [FileSystemItem]) {
+        self.url = url
+        self.parent = parent
+        self.type = type
+        self.items = items
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+    }
+
+    public static func == (lhs: FileSystemItem, rhs: FileSystemItem) -> Bool {
+        lhs.url == rhs.url
+    }
+}
+
+public final class DirectoryInfo: FileSystemItemable {
     public let url: URL
     public let parent: DirectoryInfo?
     public let files: [FileInfo]
@@ -197,7 +241,12 @@ public final class DirectoryInfo: Hashable, Equatable, Sendable {
         self.directories = directories
     }
 
-    public var name: String { url.lastPathComponent }
+    public var type: FileSystemTypes { .directory }
+
+    public var items: [FileSystemItem] {
+        (files.map(\.asItem) + directories.map(\.asItem))
+            .sorted(by: \.name, using: .orderedAscending)
+    }
 
     public var fileCount: Int { files.count }
 
@@ -220,7 +269,7 @@ public final class DirectoryInfo: Hashable, Equatable, Sendable {
     }
 }
 
-public struct FileInfo: Hashable, Equatable, Sendable {
+public struct FileInfo: FileSystemItemable {
     public let url: URL
     public let parent: DirectoryInfo?
 
@@ -229,7 +278,9 @@ public struct FileInfo: Hashable, Equatable, Sendable {
         self.parent = parent
     }
 
-    public var name: String { url.lastPathComponent }
+    public var type: FileSystemTypes { .file }
+
+    public var items: [FileSystemItem] { [] }
 }
 
 enum IgnoreSpec {

@@ -9,15 +9,15 @@ import SwiftUI
 import FileSystem
 
 struct ListItemStructureView: View {
-    let item: FSItem
+    let item: FileSystemItem
     let level: Int
 
-    private init(item: FSItem, level: Int) {
+    private init(item: FileSystemItem, level: Int) {
         self.item = item
         self.level = level
     }
 
-    init(item: FSItem) {
+    init(item: FileSystemItem) {
         self.init(item: item, level: 0)
     }
 
@@ -30,14 +30,12 @@ struct ListItemStructureView: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Image(systemName: item.isFolder ? "folder" : "text.page")
+                    Image(systemName: item.isDirectory ? "folder" : "text.page")
                     Text(item.name)
                         .lineLimit(1)
                 }
-                if item.isFolder {
-                    ForEach(item.items, id: \.url) { item in
-                        ListItemStructureView(item: item, level: level + 1)
-                    }
+                ForEach(item.items, id: \.url) { item in
+                    ListItemStructureView(item: item, level: level + 1)
                 }
             }
         }
@@ -46,6 +44,6 @@ struct ListItemStructureView: View {
 
 #Preview {
     ListItemStructureView(
-        item: .createAsLazyFile(url: URL.applicationDirectory.appendingPathComponent("Xcode.app"), parent: nil)
+        item: FileInfo(url: URL.applicationDirectory.appendingPathComponent("Xcode.app"), parent: nil).asItem
     )
 }

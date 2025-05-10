@@ -20,7 +20,7 @@ final class TransformingViewModel {
         didSet { onSelectedLLMProviderChange() }
     }
     var selectedLLMModel: LLMModel
-    private(set) var openedItem: FSItem?
+    private(set) var openedItem: FileSystemItem?
     private var apiKeys: [LLMProviders: String]
     private(set) var loadingOpenedItem = false
     var itemPathsToIgnore = ""
@@ -77,11 +77,17 @@ final class TransformingViewModel {
     }
 
     private func openItem(on url: URL) async {
-//        let directory = await fs.getDirectoryInfo(for: url, ignoringRuleFilenames: [".gitignore"])
-        guard let item = await FSHelper.getItem(from: url, lazily: true) else { return }
+        let directoryResult = await fs.getDirectoryInfo(for: url, ignoringRuleFilenames: [".gitignore"])
+        let directory: DirectoryInfo
+        switch directoryResult {
+        case let .failure(failure):
+            logger.error(label: "Failed to get directory info", error: failure)
+            return
+        case let .success(success): directory = success
+        }
 
-        setOpenedItem(item)
-        logger.info("Opened file: \(item.name)")
+        setOpenedItem(directory.asItem)
+        logger.info("Opened item: \(directory.asItem.name)")
     }
 
     private func onSelectedLLMProviderChange() {
@@ -93,7 +99,7 @@ final class TransformingViewModel {
         }
     }
 
-    private func setOpenedItem(_ item: FSItem) {
+    private func setOpenedItem(_ item: FileSystemItem) {
         openedItem = item
     }
 

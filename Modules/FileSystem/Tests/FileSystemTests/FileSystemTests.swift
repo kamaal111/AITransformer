@@ -15,16 +15,22 @@ private let TEST_DIRECTORY = FILE_URL.deletingLastPathComponent()
 
 @Test func getDirectoryInfo() async throws {
     let directoryInfo = try await FS.getDirectoryInfo(for: TEST_DIRECTORY).get()
+
+    #expect(directoryInfo.isDirectory)
+
     let foundDirectories = await FS.findDirectories("Resources/Samples/TestDirectory1", in: directoryInfo)
 
     #expect(foundDirectories.count == 1)
 
     let foundDirectory = foundDirectories[0]
 
+    #expect(foundDirectory.isDirectory)
+    #expect(foundDirectory.name == "TestDirectory1")
     #expect(foundDirectory.fileCount == 1)
 
     let foundFile = foundDirectory.files[0]
 
+    #expect(foundFile.isFile)
     #expect(foundFile.parent == foundDirectory)
     #expect(foundFile.parent?.parent == foundDirectory.parent)
 }

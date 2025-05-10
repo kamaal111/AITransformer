@@ -195,7 +195,7 @@ private struct FloatingFieldWrapper<Field: View>: View {
     private let text: String
     private let title: String
     private let error: (show: Bool, message: String?)
-    private let field: () -> Field
+    @ViewBuilder private let field: Field
 
     init(
         text: String,
@@ -206,7 +206,7 @@ private struct FloatingFieldWrapper<Field: View>: View {
         self.text = text
         self.title = title
         self.error = error
-        self.field = field
+        self.field = field()
         self.textYOffset = Self.nextTextYOffsetValue(text.isEmpty)
         self.textScaleEffect = Self.nextTextScaleEffectValue(text.isEmpty)
     }
@@ -219,7 +219,7 @@ private struct FloatingFieldWrapper<Field: View>: View {
                     .offset(y: textYOffset)
                     .scaleEffect(textScaleEffect, anchor: .leading)
                     .padding(.horizontal, titleHorizontalPadding)
-                field()
+                field
             }
             if error.show, let message = error.message {
                 Text(message)

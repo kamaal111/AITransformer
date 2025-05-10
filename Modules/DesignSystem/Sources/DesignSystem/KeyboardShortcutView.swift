@@ -9,7 +9,7 @@ import SwiftUI
 
 public struct KeyboardShortcutView<Content: View>: View {
     let shortcuts: [KeyboardShortcutConfiguration]
-    let content: Content
+    @ViewBuilder let content: Content
     let onEmit: (_ shortcut: KeyboardShortcutConfiguration) -> Void
 
     public init(

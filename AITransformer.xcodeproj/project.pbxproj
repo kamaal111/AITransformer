@@ -20,6 +20,7 @@
 			membershipExceptions = (
 				DesignSystem,
 				Features,
+				FileSystem,
 				"swift-validator",
 			);
 			target = 2C7E03A02DBFC994004DCB3C /* AITransformer */;
@@ -40,6 +41,11 @@
 			path = Modules;
 			sourceTree = "<group>";
 		};
+		2CC08E022DCA83F90099C060 /* TestPlans */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TestPlans;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,10 +63,11 @@
 		2C7E03982DBFC994004DCB3C = {
 			isa = PBXGroup;
 			children = (
-				2C7E03B02DBFCB08004DCB3C /* Modules */,
 				2C7E03A32DBFC995004DCB3C /* AITransformer */,
 				2C7E03B32DBFCB93004DCB3C /* Frameworks */,
+				2C7E03B02DBFCB08004DCB3C /* Modules */,
 				2C7E03A22DBFC995004DCB3C /* Products */,
+				2CC08E022DCA83F90099C060 /* TestPlans */,
 			);
 			sourceTree = "<group>";
 		};

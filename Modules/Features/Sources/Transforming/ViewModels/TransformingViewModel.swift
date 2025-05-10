@@ -6,12 +6,12 @@
 //
 
 import Foundation
+import FileSystem
 import Observation
+import KamaalLogger
 import KamaalExtensions
-@preconcurrency import KamaalLogger
 
 private let DEFAULT_PROVIDER: LLMProviders = .openai
-private let logger = KamaalLogger(from: TransformingViewModel.self, failOnError: true)
 
 @MainActor
 @Observable
@@ -24,6 +24,9 @@ final class TransformingViewModel {
     private var apiKeys: [LLMProviders: String]
     private(set) var loadingOpenedItem = false
     var itemPathsToIgnore = ""
+
+    private let fs = FileSystem()
+    private let logger = KamaalLogger(from: TransformingViewModel.self, failOnError: true)
 
     init() {
         let llmProvider = DEFAULT_PROVIDER
@@ -60,8 +63,8 @@ final class TransformingViewModel {
 
     func openFilePicker() async {
         await withLoadingOpeningItem {
-            let openFilePickerConfig = FSHelperConfig(allowsMultipleSelection: false, canChooseDirectories: true)
-            guard let fileURLs = FSHelper.openFilePicker(config: openFilePickerConfig) else { return }
+            let openFilePickerConfig = FileSystemOpenFilePickerConfig(allowsMultipleSelection: false, canChooseDirectories: true)
+            guard let fileURLs = fs.openFilePicker(config: openFilePickerConfig) else { return }
 
             assert(fileURLs.count == 1, "If not nil, there should be atleast 1 URL")
             guard let fileURL = fileURLs.first else { return }
@@ -70,6 +73,7 @@ final class TransformingViewModel {
     }
 
     private func openItem(on url: URL) async {
+//        await fs.getDirectoryInfo(for: url)
         guard let item = await FSHelper.getItem(from: url, lazily: true) else { return }
 
         setOpenedItem(item)

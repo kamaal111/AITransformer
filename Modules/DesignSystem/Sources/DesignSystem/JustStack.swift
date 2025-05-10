@@ -8,7 +8,7 @@
 import SwiftUI
 
 public struct JustStack<Content: View>: View {
-    public let content: Content
+    @ViewBuilder public let content: Content
 
     public init(@ViewBuilder content: () -> Content) {
         self.content = content()

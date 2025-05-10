@@ -11,12 +11,12 @@ public struct FormBox<Content: View>: View {
     private let title: String
     private let minSize: CGSize
 
-    @ViewBuilder private let content: () -> Content
+    @ViewBuilder private let content: Content
 
     public init(title: String, minSize: CGSize, content: @escaping () -> Content) {
         self.title = title
         self.minSize = minSize
-        self.content = content
+        self.content = content()
     }
 
     public init(
@@ -39,7 +39,7 @@ public struct FormBox<Content: View>: View {
                     Text(title)
                         .font(.title2)
                         .takeWidthEagerly(alignment: .leading)
-                    content()
+                    content
                 }
                 .padding(.vertical, .large)
                 .padding(.horizontal, .medium)

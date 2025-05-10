@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "F18AC95F-939E-4EEE-93D0-87176AD810F3",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AITransformer.xcodeproj",
+      "identifier" : "2C7E03A02DBFC994004DCB3C",
+      "name" : "AITransformer"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Modules\/FileSystem",
+        "identifier" : "FileSystemTests",
+        "name" : "FileSystemTests"
+      }
+    }
+  ],
+  "version" : 1
+}

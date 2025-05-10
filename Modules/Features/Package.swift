@@ -13,12 +13,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Kamaalio/KamaalSwift.git", "2.3.1"..<"3.0.0"),
         .package(path: "../DesignSystem"),
+        .package(path: "../FileSystem"),
     ],
     targets: [
         .target(name: "Transforming", dependencies: [
             .product(name: "KamaalExtensions", package: "KamaalSwift"),
             .product(name: "KamaalLogger", package: "KamaalSwift"),
             "DesignSystem",
+            "FileSystem",
         ]),
     ]
 )

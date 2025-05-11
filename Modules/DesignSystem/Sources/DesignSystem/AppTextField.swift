@@ -8,9 +8,30 @@
 import SwiftUI
 import SwiftValidator
 
+/// Defines the validation rules that can be applied to an `AppTextField`.
+///
+/// These rules are used to validate the text input and provide feedback to the user
+/// when the input doesn't meet the specified criteria.
 public enum AppTextFieldValidationRules {
+    /// Ensures the text has at least a minimum number of characters.
+    ///
+    /// - Parameters:
+    ///   - length: The minimum number of characters required.
+    ///   - message: Custom error message to display if validation fails. If `nil`, a default message is used.
     case minimumLength(length: Int, message: String?)
+
+    /// Verifies that the text matches another value exactly.
+    ///
+    /// This is commonly used for password confirmation fields.
+    ///
+    /// - Parameters:
+    ///   - value: The value to compare against.
+    ///   - message: Custom error message to display if validation fails. If `nil`, a default message is used.
     case isSameAs(value: String, message: String?)
+
+    /// Validates that the text is a properly formatted email address.
+    ///
+    /// - Parameter message: Custom error message to display if validation fails. If `nil`, a default message is used.
     case email(message: String?)
 }
 
@@ -24,11 +45,34 @@ public struct AppTextFieldErrorResult: Equatable {
     }
 }
 
+/// Specifies the input variant for an `AppTextField`.
+///
+/// Each variant configures the text field with appropriate input restrictions
+/// and keyboard types to optimize for different kinds of user input.
 public enum AppTextFieldVariant {
+    /// Standard text input with no specific restrictions.
+    ///
+    /// Uses the default keyboard type.
     case text
+
+    /// Input optimized for decimal numbers.
+    ///
+    /// On iOS, this uses the decimal pad keyboard which includes digits and a decimal point.
     case decimals
+
+    /// Input optimized for numeric values only.
+    ///
+    /// On iOS, this uses the number pad keyboard which includes only digits.
     case numbers
+
+    /// Secure text input that masks characters for privacy.
+    ///
+    /// Typically used for passwords and sensitive information.
     case secure
+
+    /// Input optimized for email addresses.
+    ///
+    /// On iOS, this uses the email address keyboard which includes the "@" symbol and ".com" shortcut.
     case email
 
     #if canImport(UIKit)
@@ -147,7 +191,7 @@ public struct AppTextField: View {
                 #endif
             }
         })
-        .onChange(of: text) { oldValue, newValue in handleValueChange(value: newValue) }
+        .onChange(of: text) { _, newValue in handleValueChange(value: newValue) }
     }
 
     private var placeholderText: String {

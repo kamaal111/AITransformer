@@ -27,7 +27,7 @@ public struct FileSystemOpenFilePickerConfig {
     }
 }
 
-public actor FileSystem: Sendable {
+public actor FileSystem {
     private let fileManager: FileManager
 
     public init(fileManager: FileManager) {
@@ -73,7 +73,7 @@ public actor FileSystem: Sendable {
         return matches
     }
 
-    public func listNestedDirectories(in directory: DirectoryInfo) ->[DirectoryInfo] {
+    public func listNestedDirectories(in directory: DirectoryInfo) -> [DirectoryInfo] {
         var directories: [DirectoryInfo] = []
         for currentDirectory in directory.directories {
             directories.append(currentDirectory)

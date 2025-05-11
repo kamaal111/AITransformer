@@ -33,4 +33,11 @@ extension Result {
         }
     }
 
+    func getOr(_ fallbackValue: Success) -> Success {
+        switch self {
+        case .failure: return fallbackValue
+        case let .success(success): return success
+        }
+    }
+
 }

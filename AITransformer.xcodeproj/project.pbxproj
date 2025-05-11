@@ -11,6 +11,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2C16E63E2DD0E21000E63E64 /* justfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = justfile; sourceTree = "<group>"; };
 		2C7E03A12DBFC995004DCB3C /* AITransformer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AITransformer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -63,6 +64,7 @@
 		2C7E03982DBFC994004DCB3C = {
 			isa = PBXGroup;
 			children = (
+				2C16E63E2DD0E21000E63E64 /* justfile */,
 				2C7E03A32DBFC995004DCB3C /* AITransformer */,
 				2C7E03B32DBFCB93004DCB3C /* Frameworks */,
 				2C7E03B02DBFCB08004DCB3C /* Modules */,
@@ -93,6 +95,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2C7E03AD2DBFC996004DCB3C /* Build configuration list for PBXNativeTarget "AITransformer" */;
 			buildPhases = (
+				2C16E6432DD0E34A00E63E64 /* ShellScript */,
 				2C7E039D2DBFC994004DCB3C /* Sources */,
 				2C7E039E2DBFC994004DCB3C /* Frameworks */,
 				2C7E039F2DBFC994004DCB3C /* Resources */,
@@ -137,6 +140,8 @@
 			);
 			mainGroup = 2C7E03982DBFC994004DCB3C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2C7E03A22DBFC995004DCB3C /* Products */;
 			projectDirPath = "";
@@ -156,6 +161,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2C16E6432DD0E34A00E63E64 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+			shellScript = "just lint-fix\njust lint\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2C7E039D2DBFC994004DCB3C /* Sources */ = {
@@ -302,7 +328,9 @@
 				DEVELOPMENT_TEAM = DXUKH9VF73;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = AITransformer;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -329,7 +357,9 @@
 				DEVELOPMENT_TEAM = DXUKH9VF73;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = AITransformer;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

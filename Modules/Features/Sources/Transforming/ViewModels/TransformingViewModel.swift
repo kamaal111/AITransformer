@@ -113,11 +113,11 @@ final class TransformingViewModel {
 
     private static func getAPIKey(for provider: LLMProviders) -> String? {
         Keychain.get(forKey: provider.key)
-            .map { data -> String? in
+            .map { data in
                 guard let data else { return nil }
                 return String(data: data, encoding: .utf8)
             }
-            .getOrNil() ?? nil
+            .getOr(nil)
     }
 }
 

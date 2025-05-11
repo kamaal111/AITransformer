@@ -17,7 +17,7 @@ public class StringIsEmail: ValidatableRule, StringValidatableRule {
 
     public func validate(_ value: String) -> Bool {
         let emailRegEx = "(?i)^(?!\\.)(?!.*\\.\\.)([A-Z0-9_'+\\-\\.]*[A-Z0-9_+\\-])@([A-Z0-9][A-Z0-9\\-]*\\.)+[A-Z]{2,}$"
-        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+        let emailPred = NSPredicate(format: "SELF MATCHES %@", emailRegEx)
 
         return emailPred.evaluate(with: value)
     }

@@ -48,12 +48,27 @@ public struct Toast: Equatable {
     }
 }
 
+/// Style options for toast notifications that define appearance and behavior.
+///
+/// `ToastStyle` provides predefined appearance options for toast notifications,
+/// including colors and system images appropriate for different notification types.
 public enum ToastStyle {
+    /// Style for error messages, typically shown in red with an X icon.
     case error
+    /// Style for warning messages, typically shown in orange with a warning triangle icon.
     case warning
+    /// Style for success messages, typically shown in green with a checkmark icon.
     case success
+    /// Style for informational messages, typically shown in blue with an information icon.
     case info
 
+    /// The color associated with this toast style.
+    ///
+    /// Each style has a semantic color:
+    /// - `.error`: red
+    /// - `.warning`: orange
+    /// - `.info`: blue
+    /// - `.success`: green
     public var color: Color {
         switch self {
         case .error: .red
@@ -63,6 +78,13 @@ public enum ToastStyle {
         }
     }
 
+    /// The SF Symbol name for the icon associated with this toast style.
+    ///
+    /// Each style has an appropriate icon:
+    /// - `.info`: "info.circle.fill"
+    /// - `.warning`: "exclamationmark.triangle.fill" 
+    /// - `.success`: "checkmark.circle.fill"
+    /// - `.error`: "xmark.circle.fill"
     public var imageSystemName: String {
         switch self {
         case .info: "info.circle.fill"
